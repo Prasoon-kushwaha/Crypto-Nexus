@@ -31,6 +31,7 @@ type CryptoData = {
 };
 
 type NewsData = {
+  link: string,
   id: number;
   title: string;
   source: string;
@@ -158,55 +159,205 @@ const Dashboard = () => {
   };
 
   const fetchWeatherData = async () => {
+    const cities = ['London', 'New York', 'Varanasi', 'New Delhi'];
+    const apiKey = process.env.NEXT_PUBLIC_KEY_WEATHER;
+    console.log("API ",apiKey)
+    
     try {
-      await new Promise(resolve => setTimeout(resolve, 800));
-      const data = [
-        { city: 'New York', temperature: 24, humidity: 68, condition: 'Partly Cloudy' },
-        { city: 'London', temperature: 18, humidity: 75, condition: 'Rainy' },
-        { city: 'Tokyo', temperature: 27, humidity: 62, condition: 'Sunny' }
-      ];
-      setWeatherData(data);
-      updateDataWithFavorites();
+      const weatherPromises = cities.map(city => 
+        fetch(`https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`)
+          .then(response => {
+            if (!response.ok) throw new Error(`Failed to fetch weather for ${city}`);
+            return response.json();
+          })
+      );
+
+      const results = await Promise.all(weatherPromises);
+      const favorites = loadFavorites();
+
+      const formattedWeatherData = results.map(data => ({
+        city: data.name,
+        temperature: Math.round(data.main.temp),
+        humidity: data.main.humidity,
+        condition: data.weather[0].main,
+        description: data.weather[0].description,
+        icon: data.weather[0].icon,
+        isFavorite: favorites.cities.includes(data.name)
+      }));
+
+      setWeatherData(formattedWeatherData);
       setLoading(prev => ({ ...prev, weather: false }));
     } catch (error) {
+      console.error('Error fetching weather data:', error);
       setErrors(prev => ({ ...prev, weather: true }));
       setLoading(prev => ({ ...prev, weather: false }));
     }
   };
-
-  const fetchCryptoData = async () => {
+  
+  // Call the function to fetch weather data
+  
+  const [socket, setSocket] = useState<WebSocket | null>(null);
+  const [initialDataLoaded, setInitialDataLoaded] = useState(false);
+  
+  const fetchCryptoData = () => {
     try {
-      await new Promise(resolve => setTimeout(resolve, 600));
-      const data = [
+      setLoading(prev => ({ ...prev, crypto: true }));
+  
+      // Close existing connection if any
+      if (socket) {
+        socket.close();
+      }
+  
+      // Initialize WebSocket connection
+      const pricesWs = new WebSocket('wss://ws.coincap.io/prices?assets=bitcoin,ethereum,solana');
+      setSocket(pricesWs);
+  
+      pricesWs.onopen = () => {
+        console.log('WebSocket connected');
+        // Set initial static data while waiting for first update
+        if (!initialDataLoaded) {
+          setCryptoData([
+            { name: 'Bitcoin', price: 45678, change: 2.5 },
+            { name: 'Ethereum', price: 2345, change: -1.2 },
+            { name: 'Solana', price: 98, change: 5.7 }
+          ]);
+        }
+      };
+  
+      pricesWs.onmessage = (msg) => {
+        const livePrices = JSON.parse(msg.data);
+        
+        setCryptoData(prev => {
+          const updatedData = prev.map(crypto => {
+            const lowerName = crypto.name.toLowerCase();
+            if (livePrices.hasOwnProperty(lowerName)) {
+              const newPrice = parseFloat(livePrices[lowerName]);
+              const change = ((newPrice - crypto.price) / crypto.price) * 100;
+              
+              return {
+                ...crypto,
+                price: newPrice,
+                change: parseFloat(change.toFixed(2))
+              };
+            }
+            return crypto;
+          });
+  
+          return updatedData;
+        });
+        
+        setInitialDataLoaded(true);
+        setLoading(prev => ({ ...prev, crypto: false }));
+      };
+  
+      pricesWs.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        setErrors(prev => ({ ...prev, crypto: true }));
+        setLoading(prev => ({ ...prev, crypto: false }));
+      };
+  
+      pricesWs.onclose = () => {
+        console.log('WebSocket disconnected');
+      };
+  
+    } catch (error) {
+      setCryptoData([
         { name: 'Bitcoin', price: 45678, change: 2.5 },
         { name: 'Ethereum', price: 2345, change: -1.2 },
         { name: 'Solana', price: 98, change: 5.7 }
-      ];
-      setCryptoData(data);
-      updateDataWithFavorites();
-      setLoading(prev => ({ ...prev, crypto: false }));
-    } catch (error) {
+      ]);
+      console.error('Error setting up WebSocket:', error);
       setErrors(prev => ({ ...prev, crypto: true }));
       setLoading(prev => ({ ...prev, crypto: false }));
     }
+  
   };
-
-  const fetchNewsData = async () => {
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setNewsData([
-        { id: 1, title: 'Crypto Market Shows Volatility Amid New Regulations', source: 'CoinDesk', time: '2h ago' },
-        { id: 2, title: 'Bitcoin Reaches New Quarterly High', source: 'CryptoNews', time: '4h ago' },
-        { id: 3, title: 'Ethereum Upgrade Scheduled for Next Month', source: 'Blockchain Daily', time: '6h ago' },
-        { id: 4, title: 'Weather Patterns Affecting Data Center Operations', source: 'TechWeather', time: '1d ago' },
-        { id: 5, title: 'Solana Network Outage Raises Concerns', source: 'Decrypt', time: '1d ago' }
-      ]);
-      setLoading(prev => ({ ...prev, news: false }));
-    } catch (error) {
-      setErrors(prev => ({ ...prev, news: true }));
-      setLoading(prev => ({ ...prev, news: false }));
+  
+  // Initialize on mount
+  useEffect(() => {
+    fetchCryptoData();
+    
+    return () => {
+      if (socket) {
+        socket.close();
+      }
+    };
+  }, []); // Empty dependency array means this runs once on mount
+  
+  // Reconnect logic if needed
+  useEffect(() => {
+    if (errors.crypto) {
+      const timer = setTimeout(() => {
+        fetchCryptoData();
+      }, 5000); // Reconnect after 5 seconds on error
+      
+      return () => clearTimeout(timer);
     }
-  };
+  }, [errors.crypto]);
+  // Use in useEffect
+  useEffect(() => {
+    const cleanup = fetchCryptoData();
+    return cleanup; // This will close the WebSocket when component unmounts
+  }, []);
+
+  // news data
+const fetchNewsData = async () => {
+   const tags=["India","Bitcoin"]
+  // const tags = ["India", "Bitcoin", "Crypto", "Market", "Economy"];
+  const apiKey = process.env.NEXT_PUBLIC_KEY_NEWS;
+  // const url = `https://newsdata.io/api/1/news?apikey=${apiKey}&q=${tags[0]}&size=1`
+  // const data = await fetch(url)
+  // console.log(data)
+  try {
+    setLoading(prev => ({ ...prev, news: true }));
+    
+    // Fetch news for each tag in parallel
+    const newsPromises = tags.map(tag => 
+      fetch(`https://newsdata.io/api/1/news?apikey=${apiKey}&q=${tag}&size=1`)
+        .then(response => response.json())
+    );
+    
+    const newsResponses = await Promise.all(newsPromises);
+    
+    // Process responses to get top article for each tag
+    const formattedNews = newsResponses
+      .filter(response => response.status === "success" && response.results?.length > 0)
+      .map((response, index) => {
+        const article = response.results[0]; // Get top article
+        return {
+          id: index + 1,
+          title: article.title,
+          source: article.source_name,
+          time: formatTimeAgo(article.pubDate),
+          tag: tags[index],
+          link: article.link,
+          image: article.image_url
+        };
+      });
+      // console.log(formattedNews)
+    
+    setNewsData(formattedNews);
+    setLoading(prev => ({ ...prev, news: false }));
+  } catch (error) {
+    console.error("Error fetching news:", error);
+    setErrors(prev => ({ ...prev, news: true }));
+    setLoading(prev => ({ ...prev, news: false }));
+  }
+};
+
+// Helper function to format time as "Xh ago" or "Xd ago"
+const formatTimeAgo = (pubDate: string) => {
+  const now = new Date();
+  const pub = new Date(pubDate);
+  const diffHours = Math.floor((now.getTime() - pub.getTime()) / (1000 * 60 * 60));
+  
+  if (diffHours < 24) {
+    return `${diffHours}h ago`;
+  } else {
+    const diffDays = Math.floor(diffHours / 24);
+    return `${diffDays}d ago`;
+  }
+};
 
   // Initial data load
   useEffect(() => {
@@ -407,6 +558,13 @@ const Dashboard = () => {
               ) : (
                 <AnimatePresence>
                   {weatherData.map((weather, index) => (
+                    <Link 
+                    href={`/city/${encodeURIComponent(weather.city.toLowerCase())}`}
+                    passHref
+                    legacyBehavior
+                  >
+                    
+                    
                     <motion.div
                       key={weather.city}
                       initial={{ opacity: 0, y: 20 }}
@@ -440,6 +598,8 @@ const Dashboard = () => {
                       </div>
                       <div className="mt-1 text-sm">{weather.condition}</div>
                     </motion.div>
+                  
+                  </Link> 
                   ))}
                 </AnimatePresence>
               )}
@@ -469,10 +629,10 @@ const Dashboard = () => {
                 <motion.div
                   initial={{ scale: 0.9, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
-                  className={`p-4 rounded-lg ${darkMode ? 'bg-red-900' : 'bg-red-50'} text-red-700`}
+                  className={`p-4 rounded-lg ${darkMode ? 'bg-red-200' : 'bg-red-50' } text-red-700` }
                 >
-                  Crypto data unavailable. <button onClick={fetchCryptoData} className="text-blue-600">Retry</button>
-                </motion.div>
+                  
+                  Crypto data unavailable, the CoinCap api is having problem keep refreshing</motion.div>
               ) : loading.crypto ? (
                 <div className="space-y-4">
                   {[1, 2, 3].map((i) => (
@@ -587,13 +747,23 @@ const Dashboard = () => {
                       transition={{ delay: index * 0.05, type: 'spring' }}
                       whileHover={{ y: -3 }}
                       whileTap={{ scale: 0.98 }}
+                      >
+                      <Link 
+                        href={news.link}
+                        passHref
+                        legacyBehavior
+                      >
+                      <div
                       className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-50'} transition-all cursor-pointer`}
-                    >
+                      >
+                      
                       <h3 className="font-medium mb-2">{news.title}</h3>
                       <div className="flex justify-between text-sm text-gray-500">
                         <span>{news.source}</span>
                         <span>{news.time}</span>
                       </div>
+                      </div>
+                      </Link>
                     </motion.div>
                   ))}
                 </AnimatePresence>
