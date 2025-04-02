@@ -118,7 +118,7 @@ export default function CryptoDetail({ params }: { params: { id: string } }) {
       if (apiError.status === 404) {
         errorMessage = 'Cryptocurrency not found';
       } else if (apiError.isNetworkError) {
-        errorMessage = 'Network error - please check your connection';
+        errorMessage = 'Api error - We are unable to fetch data from Coincap-Api';
       } else if (apiError.message.includes('Invalid data structure')) {
         errorMessage = 'Received unexpected data format';
       } else if (apiError.message.includes('Missing required fields')) {

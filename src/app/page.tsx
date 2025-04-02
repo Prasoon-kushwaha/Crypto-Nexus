@@ -207,10 +207,9 @@ const Dashboard = () => {
       if (socket) {
         socket.close();
       }
-      const apiKey=process.env.NEXT_PUBLIC_KEY_CRYPTO
   
       // Initialize WebSocket connection
-      const pricesWs = new WebSocket('wss://ws.coincap.io/prices?assets=bitcoin,ethereum,solana,ripple&apiKey=${apiKey}');
+      const pricesWs = new WebSocket('wss://ws.coincap.io/prices?assets=bitcoin,ethereum,solana');
       setSocket(pricesWs);
   
       pricesWs.onopen = () => {
