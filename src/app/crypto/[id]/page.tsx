@@ -88,12 +88,23 @@ export default function CryptoDetail({ params }: { params: { id: string } }) {
       setError(null);
       setLoadingAsset(true);
       setLoadingHistory(true);
-      
+
+      const apiKey = process.env.NEXT_PUBLIC_KEY_CRYPTO;
+
       const [assetResponse, historyResponse] = await Promise.all([
-        axios.get(`https://api.coincap.io/v2/assets/${params.id}`),
-        axios.get(`https://api.coincap.io/v2/assets/${params.id}/history?interval=d1`)
+        axios.get(`https://api.coincap.io/v2/assets/${params.id}`, {
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Accept-Encoding': 'gzip'
+          }
+        }),
+        axios.get(`https://api.coincap.io/v2/assets/${params.id}/history?interval=d1`, {
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Accept-Encoding': 'gzip'
+          }
+        })
       ]);
-      
       if (!assetResponse.data.data || !historyResponse.data.data) {
         throw new Error('Invalid data structure from API');
       }

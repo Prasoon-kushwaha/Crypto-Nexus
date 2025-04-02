@@ -204,12 +204,13 @@ const Dashboard = () => {
       setLoading(prev => ({ ...prev, crypto: true }));
   
       // Close existing connection if any
-      // if (socket) {
-      //   socket.close();
-      // }
+      if (socket) {
+        socket.close();
+      }
+      const apiKey=process.env.NEXT_PUBLIC_KEY_CRYPTO
   
       // Initialize WebSocket connection
-      const pricesWs = new WebSocket('wss://ws.coincap.io/prices?assets=bitcoin,ethereum,solana');
+      const pricesWs = new WebSocket('wss://ws.coincap.io/prices?assets=bitcoin,ethereum,solana,ripple&apiKey=${apiKey}');
       setSocket(pricesWs);
   
       pricesWs.onopen = () => {
@@ -631,8 +632,14 @@ const formatTimeAgo = (pubDate: string) => {
                   animate={{ scale: 1, opacity: 1 }}
                   className={`p-4 rounded-lg ${darkMode ? 'bg-red-200' : 'bg-red-50' } text-red-700` }
                 >
-                  
-                  Crypto data unavailable, the CoinCap api is having problem keep refreshing</motion.div>
+  
+  Crypto data is unavailable. The CoinCap API is having issues—please keep refreshing. Alternatively, you can visit:
+                  <Link
+                   href={`/crypto/${encodeURIComponent("Bitcoin".toLowerCase())}`}
+                   passHref
+                   legacyBehavior
+                  ><span className='text-blue-600 hover:text-gray-900'> Bitcoin</span></Link>
+                </motion.div>
               ) : loading.crypto ? (
                 <div className="space-y-4">
                   {[1, 2, 3].map((i) => (
