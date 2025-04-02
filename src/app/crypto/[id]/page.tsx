@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter,useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { FiArrowLeft, FiDollarSign, FiTrendingUp, FiBarChart2, FiAlertCircle, FiMoon, FiSun } from 'react-icons/fi';
 import dynamic from 'next/dynamic';
@@ -34,7 +34,10 @@ type ApiError = {
   isNetworkError?: boolean;
 };
 
-export default function CryptoDetail({ params }: { params: { id: string } }) {
+export default function CryptoDetail() {
+
+  const params = useParams(); // Unwraps params safely
+  // const cityId = params.id; // Now safe to access
   const router = useRouter();
   const [cryptoData, setCryptoData] = useState<CryptoData | null>(null);
   const [historyData, setHistoryData] = useState<CryptoHistory[]>([]);
@@ -126,7 +129,7 @@ export default function CryptoDetail({ params }: { params: { id: string } }) {
       }
       
       setError(errorMessage);
-      console.error('API Error:', apiError);
+      // console.error('API Error:', apiError);
     } finally {
       setLoading(false);
       setLoadingAsset(false);
@@ -139,50 +142,53 @@ export default function CryptoDetail({ params }: { params: { id: string } }) {
   }, [params.id]);
 
   // Chart configuration
-  const chartOptions = {
+  const  ApexOptions = {
     chart: {
       id: 'price-chart',
       foreColor: darkMode ? '#E5E7EB' : '#374151',
       background: 'transparent',
       toolbar: {
         show: true,
-        tools: { download: true, selection: true, zoom: true, reset: true }
+        tools: { download: true, selection: true, zoom: true, reset: true },
       },
-      zoom: { enabled: true }
+      zoom: { enabled: true },
     },
     dataLabels: {
-      enabled: false
+      enabled: false,
     },
     markers: {
       size: 0,
       hover: {
-        size: 5
-      }
+        size: 5,
+      },
     },
     xaxis: {
-      type: 'datetime',
-      categories: historyData.map(h => h.time),
+      type: 'datetime' as const, // ✅ Explicitly define type
+      categories: historyData.map((h) => h.time),
       labels: {
         style: { colors: darkMode ? '#9CA3AF' : '#6B7280' },
-        datetimeUTC: false
-      }
+        datetimeUTC: false,
+      },
     },
     yaxis: {
       labels: {
         style: { colors: darkMode ? '#9CA3AF' : '#6B7280' },
-        formatter: (value: number) => `$${value.toFixed(2)}`
-      }
+        formatter: (value: number) => `$${value.toFixed(2)}`,
+      },
     },
     grid: {
       borderColor: darkMode ? '#374151' : '#E5E7EB',
-      strokeDashArray: 4
+      strokeDashArray: 4,
     },
-    stroke: { curve: 'smooth', width: 2 },
+    stroke: {
+      curve: 'smooth' as const, // ✅ Explicitly define type
+      width: 2,
+    },
     colors: ['#3B82F6'],
     tooltip: {
       theme: darkMode ? 'dark' : 'light',
-      x: { format: 'dd MMM yyyy' }
-    }
+      x: { format: 'dd MMM yyyy' },
+    },
   };
 
   const chartSeries = [{
@@ -235,12 +241,12 @@ export default function CryptoDetail({ params }: { params: { id: string } }) {
           >
             <FiArrowLeft className="w-5 h-5" /> Back
           </button>
-          <button
+          {/* <button
             onClick={() => setDarkMode(!darkMode)}
             className="px-4 py-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition-all text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
           >
             {darkMode ? <FiSun className="w-5 h-5" /> : <FiMoon className="w-5 h-5" />}
-          </button>
+          </button> */}
         </div>
 
         {loading ? (
@@ -278,7 +284,7 @@ export default function CryptoDetail({ params }: { params: { id: string } }) {
                 <div className="animate-pulse h-[400px] bg-gray-200 dark:bg-gray-700 rounded-xl" />
               ) : (
                 <Chart 
-                  options={chartOptions} 
+                  options={ApexOptions} 
                   series={chartSeries} 
                   type="area" 
                   height={400} 

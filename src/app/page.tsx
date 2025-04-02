@@ -96,11 +96,15 @@ const Dashboard = () => {
 
   // Load favorites from localStorage
   const loadFavorites = () => {
-    const favorites = JSON.parse(
-      localStorage.getItem('favorites') || '{"cities": [], "cryptos": []}'
-    );
-    return favorites;
+    if (typeof window !== "undefined") {
+      const favorites = JSON.parse(
+        localStorage.getItem("favorites") || '{"cities": [], "cryptos": []}'
+      );
+      return favorites;
+    }
+    return { cities: [], cryptos: [] }; // Default empty object for SSR
   };
+  
   
 
   // Save favorites to localStorage
@@ -194,6 +198,11 @@ const Dashboard = () => {
     }
   };
   
+  const slAnimatePileUp = {
+    hidden: { opacity: 0, y: 20 },  // Start slightly below and invisible
+    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
+  };
+  
   // Call the function to fetch weather data
   
   const [socket, setSocket] = useState<WebSocket | null>(null);
@@ -250,11 +259,13 @@ const Dashboard = () => {
         setLoading(prev => ({ ...prev, crypto: false }));
       };
   
-      pricesWs.onerror = (error) => {
-        console.error('WebSocket error:', error);
-        setErrors(prev => ({ ...prev, crypto: true }));
-        setLoading(prev => ({ ...prev, crypto: false }));
+      pricesWs.onerror = (event) => {
+        console.error("WebSocket error:", event);
+      
+        setErrors((prev) => ({ ...prev, crypto: true }));
+        setLoading((prev) => ({ ...prev, crypto: false }));
       };
+      
   
       pricesWs.onclose = () => {
         console.log('WebSocket disconnected');
@@ -519,7 +530,7 @@ const formatTimeAgo = (pubDate: string) => {
         >
           {/* Weather Section */}
           <motion.section
-            variants={slideUp}
+            variants={slAnimatePileUp}
             className={`p-6 rounded-xl ${darkMode ? 'bg-gray-800' : 'bg-white'} shadow-lg`}
           >
             <div className="flex items-center justify-between mb-4">
@@ -558,6 +569,7 @@ const formatTimeAgo = (pubDate: string) => {
               ) : (
                 <AnimatePresence>
                   {weatherData.map((weather, index) => (
+                    
                     <Link 
                     href={`/city/${encodeURIComponent(weather.city.toLowerCase())}`}
                     passHref

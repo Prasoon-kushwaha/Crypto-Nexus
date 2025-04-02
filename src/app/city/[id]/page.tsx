@@ -1,5 +1,5 @@
 'use client';
-import { useRouter } from 'next/navigation';
+import { useRouter,useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { WiHumidity, WiRain, WiStrongWind, WiDaySunny, WiCloudy, WiRainMix, WiSnow, WiThunderstorm, WiFog } from 'react-icons/wi';
 import { FiArrowLeft } from 'react-icons/fi';
@@ -40,7 +40,17 @@ type ForecastData = {
   };
 };
 
-export default function CityDetail({ params }: { params: { id: string } }) {
+interface CityPageProps {
+  params: { id: string };  // Must match [id] in the folder name
+  searchParams?: { [key: string]: string | string[] | undefined };
+}
+
+
+
+export default function CityDetail() {
+  const params = useParams(); // Unwraps params safely
+  const cityId = params.id; // Now safe to access
+
   const router = useRouter();
   const [forecastData, setForecastData] = useState<ForecastData | null>(null);
   const [loading, setLoading] = useState(true);
