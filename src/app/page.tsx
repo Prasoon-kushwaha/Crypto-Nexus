@@ -204,9 +204,9 @@ const Dashboard = () => {
       setLoading(prev => ({ ...prev, crypto: true }));
   
       // Close existing connection if any
-      if (socket) {
-        socket.close();
-      }
+      // if (socket) {
+      //   socket.close();
+      // }
   
       // Initialize WebSocket connection
       const pricesWs = new WebSocket('wss://ws.coincap.io/prices?assets=bitcoin,ethereum,solana');

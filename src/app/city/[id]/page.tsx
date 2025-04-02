@@ -252,7 +252,9 @@ export default function CityDetail({ params }: { params: { id: string } }) {
                   <p>{new Date(day.dt * 1000).toLocaleDateString('en-US', { weekday: 'short' })}</p>
                 </div>
                 <div className="daily-weather">
+                  <div>
                   {getWeatherIcon(day.weather[0].main)}
+                  </div>
                   <p className="daily-description">
                     {day.weather[0].description}
                   </p>
