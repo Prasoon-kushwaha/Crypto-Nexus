@@ -1,36 +1,102 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CryptoWeather Nexus 🌤️💰
 
-## Getting Started
+![Dashboard Screenshot](./public/github_images/dashboard.png) 
 
-First, run the development server:
+![Coin Page Screenshot](./public/github_images/bitc.png) 
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+![Weather Page Screenshot](./public/github_images/weather.png) 
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+A real-time dashboard combining cryptocurrency market data, weather forecasts, and news updates with a beautiful animated interface.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Features ✨
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Live Cryptocurrency Prices**: Bitcoin, Ethereum, and Solana with WebSocket updates
+- **Global Weather Data**: Current conditions for major cities
+- **Personalized News Feed**: Curated news based on your interests
+- **Favorites System**: Bookmark your preferred cities and cryptos
+- **Dark/Light Mode**: Eye-friendly theme switching
+- **Real-time Updates**: Automatic data refresh without page reloads
+- **Interactive UI**: Smooth animations and transitions
 
-## Learn More
+## APIs Used 📡
 
-To learn more about Next.js, take a look at the following resources:
+| Service       | API Provider | Type       | Note |
+|--------------|-------------|------------|------|
+| Cryptocurrency | [CoinCap](https://docs.coincap.io/) | WebSocket/REST | **Warning:** This API is known to be inconsistent and may fail frequently. App includes automatic reconnection. |
+| Weather       | [OpenWeatherMap](https://openweathermap.org/api) | REST | Free tier available |
+| News          | [NewsData.io](https://newsdata.io/docs) | REST | Requires API key |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Data Fetching Strategy 🔄
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### WebSocket (Used for Crypto Prices)
+- Establishes persistent connection to CoinCap
+- Receives real-time price updates
+- Auto-reconnects on failure with exponential backoff
+- Fallback to REST API if WebSocket fails
 
-## Deploy on Vercel
+### REST API (Used for Weather & News)
+- Initial data load on dashboard open
+- Periodic refresh every 60 seconds
+- Error boundaries with retry mechanism
+- Local cache for offline support
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Technologies 🛠️
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+**Frontend:**
+- Next.js 14 (App Router)
+- TypeScript
+- Tailwind CSS
+- Framer Motion (Animations)
+- React Icons
+- Axios (HTTP Client)
+
+**State Management:**
+- React Context (Theme)
+- LocalStorage (Favorites)
+- useState/useEffect hooks
+
+## Installation ⚙️
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/cryptoweather-nexus.git
+   cd cryptoweather-nexus
+   ```
+
+2. Install dependencies::
+   ```bash
+   npm install
+    # or
+    yarn install
+   ```
+   
+3. Create .env.local file:
+   ```bash
+    NEXT_PUBLIC_KEY_CRYPTO=your_coincap_api_key
+    NEXT_PUBLIC_KEY_WEATHER=your_openweather_api_key
+    NEXT_PUBLIC_KEY_NEWS=your_newsdata_api_key
+   ```
+   
+4. Run development server:
+   ```bash
+     npm run dev
+    # or
+    yarn dev
+   ```
+## Known Issues
+
+Known Issues ⚠️
+
+1. CoinCap API Reliability:
+
+    - Frequent disconnections expected
+
+    - May show placeholder data during outages
+
+    - Automatic reconnection attempts every 5 seconds
+
+2. Rate Limiting:
+
+    - NewsData.io has strict rate limits
+
+    - OpenWeatherMap free tier has hourly limits

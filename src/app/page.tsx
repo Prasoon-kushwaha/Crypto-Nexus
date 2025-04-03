@@ -324,7 +324,7 @@ const fetchNewsData = async () => {
     
     // Fetch news for each tag in parallel
     const newsPromises = tags.map(tag => 
-      fetch(`https://newsdata.io/api/1/news?apikey=${apiKey}&q=${tag}&size=1`)
+      fetch(`https://newsdata.io/api/1/news?apikey=${apiKey}&q=${tag}&size=1&language=en `)
         .then(response => response.json())
     );
     
