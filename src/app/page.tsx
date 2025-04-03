@@ -313,8 +313,8 @@ const Dashboard = () => {
 
   // news data
 const fetchNewsData = async () => {
-   const tags=["India","Bitcoin"]
-  // const tags = ["India", "Bitcoin", "Crypto", "Market", "Economy"];
+  //  const tags=["India","Bitcoin"]
+  const tags = ["India", "Bitcoin", "Crypto", "Market", "Economy"];
   const apiKey = process.env.NEXT_PUBLIC_KEY_NEWS;
   // const url = `https://newsdata.io/api/1/news?apikey=${apiKey}&q=${tags[0]}&size=1`
   // const data = await fetch(url)
