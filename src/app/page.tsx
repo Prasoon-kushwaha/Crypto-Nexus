@@ -312,50 +312,114 @@ const Dashboard = () => {
   }, []);
 
   // news data
-const fetchNewsData = async () => {
-  //  const tags=["India","Bitcoin"]
-  const tags = ["India", "Bitcoin", "Crypto", "Market", "Economy"];
-  const apiKey = process.env.NEXT_PUBLIC_KEY_NEWS;
-  // const url = `https://newsdata.io/api/1/news?apikey=${apiKey}&q=${tags[0]}&size=1`
-  // const data = await fetch(url)
-  // console.log(data)
-  try {
-    setLoading(prev => ({ ...prev, news: true }));
-    
-    // Fetch news for each tag in parallel
-    const newsPromises = tags.map(tag => 
-      fetch(`https://newsdata.io/api/1/news?apikey=${apiKey}&q=${tag}&size=1&language=en `)
-        .then(response => response.json())
-    );
-    
-    const newsResponses = await Promise.all(newsPromises);
-    
-    // Process responses to get top article for each tag
-    const formattedNews = newsResponses
-      .filter(response => response.status === "success" && response.results?.length > 0)
-      .map((response, index) => {
-        const article = response.results[0]; // Get top article
+  interface NewsItem {
+    id: number;
+    title: string;
+    source: string;
+    time: string;
+    tag?: string;
+    link: string;
+    image?: string;
+  }
+  
+  const fetchNewsData = async () => {
+    const tags = ["India", "Bitcoin", "Crypto", "Market", "Economy"];
+    const apiKey = process.env.NEXT_PUBLIC_KEY_NEWS;
+  
+    // Fallback news data
+    const fallbackNews: NewsItem[] = [
+      {
+        id: 1,
+        title: "India's economy shows strong growth in Q3",
+        source: "Economic Times",
+        time: "2h ago",
+        tag: "India",
+        link: "https://data.worldbank.org/indicator/NY.GDP.MKTP.KD.ZG?locations=IN",
+        image: "https://example.com/india-economy.jpg"
+      },
+      {
+        id: 2,
+        title: "Bitcoin reaches new all-time high",
+        source: "Crypto News",
+        time: "5h ago",
+        tag: "Bitcoin",
+        link: "https://charts.bitbo.io/ath/",
+        image: "https://example.com/bitcoin.jpg"
+      },
+      {
+        id: 3,
+        title: "Cryptocurrency market trends in 2024",
+        source: "Blockchain Daily",
+        time: "1d ago",
+        tag: "Crypto",
+        link: "https://www.coingecko.com/research/publications/2024-annual-crypto-report",
+        image: "https://example.com/crypto-trends.jpg"
+      },
+      {
+        id: 4,
+        title: "Stock market reaches record levels",
+        source: "Financial Times",
+        time: "3h ago",
+        tag: "Market",
+        link: "https://www.indiatvnews.com/business/news/market-news-sensex-hits-lifetime-high-nifty-record-levels-2024-09-26-954116",
+        image: "https://example.com/stock-market.jpg"
+      },
+      {
+        id: 5,
+        title: "Global economic outlook for 2024",
+        source: "World Economic Journal",
+        time: "1d ago",
+        tag: "Economy",
+        link: "https://www.imf.org/en/Publications/WEO/Issues/2024/10/22/world-economic-outlook-october-2024",
+        image: "https://example.com/economy.jpg"
+      }
+    ];
+  
+    try {
+      setLoading(prev => ({ ...prev, news: true }));
+      setErrors(prev => ({ ...prev, news: false }));
+  
+      // Fetch news for each tag in parallel
+      const newsPromises = tags.map(tag => 
+        fetch(`https://newsdata.io/api/1/news?apikey=${apiKey}&q=${tag}&size=1&language=en`)
+          .then(response => {
+            if (!response.ok) throw new Error(`Failed to fetch news for ${tag}`);
+            return response.json();
+          })
+          .catch(() => null) // Continue even if one request fails
+      );
+      
+      const newsResponses = await Promise.all(newsPromises);
+      
+      // Process responses or use fallback
+      const formattedNews = newsResponses.map((response, index) => {
+        // Use fallback if API failed or returned no results
+        if (!response || response.status !== "success" || !response.results?.length) {
+          return fallbackNews[index];
+        }
+  
+        const article = response.results[0];
         return {
           id: index + 1,
-          title: article.title,
-          source: article.source_name,
-          time: formatTimeAgo(article.pubDate),
+          title: article.title || fallbackNews[index].title,
+          source: article.source_name || fallbackNews[index].source,
+          time: article.pubDate ? formatTimeAgo(article.pubDate) : fallbackNews[index].time,
           tag: tags[index],
-          link: article.link,
-          image: article.image_url
+          link: article.link || fallbackNews[index].link,
+          image: article.image_url || fallbackNews[index].image
         };
       });
-      // console.log(formattedNews)
-    
-    setNewsData(formattedNews);
-    setLoading(prev => ({ ...prev, news: false }));
-  } catch (error) {
-    console.error("Error fetching news:", error);
-    setErrors(prev => ({ ...prev, news: true }));
-    setLoading(prev => ({ ...prev, news: false }));
-  }
-};
-
+      
+      setNewsData(formattedNews);
+    } catch (error) {
+      console.error("Error fetching news:", error);
+      // Use fallback data if complete API failure
+      setNewsData(fallbackNews);
+      setErrors(prev => ({ ...prev, news: true }));
+    } finally {
+      setLoading(prev => ({ ...prev, news: false }));
+    }
+  };
 // Helper function to format time as "Xh ago" or "Xd ago"
 const formatTimeAgo = (pubDate: string) => {
   const now = new Date();

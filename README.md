@@ -100,3 +100,23 @@ Known Issues ⚠️
     - NewsData.io has strict rate limits
 
     - OpenWeatherMap free tier has hourly limits
+
+
+page.tsx : dashboard
+               - weather city  = [Varanasi, New York]   // REST api
+               - crypto  cryto = [bitcoin , Ethereum]  // we want live update websockets ref docs
+                                                         //  v3 api 
+               - news     tags = [india, bitcoin]      // REST api get exhaust due to rate limit
+               // 3 function 
+               // fetching the
+               /
+
+
+               whin i click city // city/delhi
+
+
+               // for graph i am using react apex chats
+               // 
+
+               for crypto
+               // rest api crypto (coinscap i.e incosnstis)
